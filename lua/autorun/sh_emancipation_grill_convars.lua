@@ -1,28 +1,29 @@
 -- Author pkillboredom 2023
 
 -- Defaults for Emancipation Grill.
-local grill_delay_time           = 10 // Time in seconds before the Emancipation Grill activates after placement.
-local grill_fizzle_duration      = 4 // Time in seconds that it takes for the Emancipation Grill to fizzle an object.
-local grill_idle_volume          = 10 // Volume of the Emancipation Grill's idle sound.
-local grill_fizzle_volume        = 60 // Volume of the Emancipation Grill's fizzle sound.
-local grill_fizzle_limit         = 0 // Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.
-local grill_active_timer         = 0 // Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.
-local grill_max_distance         = 144 // Maximum distance in hammer units that the emancipation grill can span.
-local grill_height               = 60 // Height of the Emancipation Grill in Hammer Units.
+local grill_delay_time           = 10 -- Time in seconds before the Emancipation Grill activates after placement.
+local grill_fizzle_duration      = 4 -- Time in seconds that it takes for the Emancipation Grill to fizzle an object.
+local grill_idle_volume          = 10 -- Volume of the Emancipation Grill's idle sound.
+local grill_fizzle_volume        = 60 -- Volume of the Emancipation Grill's fizzle sound.
+local grill_fizzle_limit         = 0 -- Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.
+local grill_active_timer         = 0 -- Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.
+local grill_max_distance         = 144 -- Maximum distance in hammer units that the emancipation grill can span.
+local grill_height               = 60 -- Height of the Emancipation Grill in Hammer Units.
 
-local grill_fizzle_weapons       = 1 // Boolean which controls whether the Grill fizzles weapons.
-local grill_fizzle_corpses       = 1 // Boolean which controls whether the Grill fizzles corpses.
-local grill_fizzle_props         = 0 // Boolean which controls whether the Grill fizzles props.
-local grill_fizzle_projectiles   = 1 // Boolean which controls whether the Grill fizzles projectiles.
-local grill_fizzle_grenade_ents  = 1 // Boolean which controls whether the Grill fizzles grenades.
-local grill_fizzle_own_team      = 0 // Boolean which controls whether the Grill fizzles the owner's team's weapons. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_weapons       = 1 -- Boolean which controls whether the Grill fizzles weapons.
+local grill_fling_weapons        = 0 -- Boolean which controls whether the Grill flings weapons. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_corpses       = 1 -- Boolean which controls whether the Grill fizzles corpses.
+local grill_fizzle_props         = 0 -- Boolean which controls whether the Grill fizzles props.
+local grill_fizzle_projectiles   = 1 -- Boolean which controls whether the Grill fizzles projectiles.
+local grill_fizzle_grenade_ents  = 1 -- Boolean which controls whether the Grill fizzles grenades.
+local grill_fizzle_own_team      = 0 -- Boolean which controls whether the Grill fizzles the owner's team's weapons. Requires ttt_grill_fizzle_weapons to be 1.
 
-local grill_fizzle_pistols       = 1 // Boolean which controls whether the Grill fizzles pistols. Requires ttt_grill_fizzle_weapons to be 1.
-local grill_fizzle_rifles        = 1 // Boolean which controls whether the Grill fizzles rifles. Requires ttt_grill_fizzle_weapons to be 1.
-local grill_fizzle_grenade_weaps = 1 // Boolean which controls whether the Grill fizzles grenades (in inventory). Requires ttt_grill_fizzle_weapons to be 1.
-local grill_fizzle_extra         = 1 // Boolean which controls whether the Grill fizzles extra weapons. Requires ttt_grill_fizzle_weapons to be 1.
-local grill_fizzle_special       = 1 // Boolean which controls whether the Grill fizzles special weapons. Requires ttt_grill_fizzle_weapons to be 1.
-local grill_fizzle_dna_scanner   = 0 // Boolean which controls whether the Grill fizzles the DNA Scanner. Overrides grill_fizzle_special. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_pistols       = 1 -- Boolean which controls whether the Grill fizzles pistols. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_rifles        = 1 -- Boolean which controls whether the Grill fizzles rifles. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_grenade_weaps = 1 -- Boolean which controls whether the Grill fizzles grenades (in inventory). Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_extra         = 1 -- Boolean which controls whether the Grill fizzles extra weapons. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_special       = 1 -- Boolean which controls whether the Grill fizzles special weapons. Requires ttt_grill_fizzle_weapons to be 1.
+local grill_fizzle_dna_scanner   = 0 -- Boolean which controls whether the Grill fizzles the DNA Scanner. Overrides grill_fizzle_special. Requires ttt_grill_fizzle_weapons to be 1.
 
 -- Create Con Vars
 CreateConVar("ttt_grill_delay_time", grill_delay_time, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
@@ -34,6 +35,7 @@ CreateConVar("ttt_grill_active_timer", grill_active_timer, {FCVAR_NOTIFY, FCVAR_
 CreateConVar("ttt_grill_max_distance", grill_max_distance, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_height", grill_height, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_weapons", grill_fizzle_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+CreateConVar("ttt_grill_fling_weapons", grill_fling_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_corpses", grill_fizzle_corpses, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_props", grill_fizzle_props, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_projectiles", grill_fizzle_projectiles, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
@@ -46,7 +48,7 @@ CreateConVar("ttt_grill_fizzle_extra", grill_fizzle_extra, {FCVAR_NOTIFY, FCVAR_
 CreateConVar("ttt_grill_fizzle_special", grill_fizzle_special, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_dna_scanner", grill_fizzle_dna_scanner, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 
-// Set-up ULX ConVars
+-- Set-up ULX ConVars
 hook.Add('TTTUlxInitCustomCVar', 'TTTEmancipationGrillInitRWCvar', function(name)
     ULib.replicatedWritableCvar('ttt_grill_delay_time', 'rep_ttt_grill_delay_time', GetConVar('ttt_grill_delay_time'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_duration', 'rep_ttt_grill_fizzle_duration', GetConVar('ttt_grill_fizzle_duration'):GetInt(), true, false, name)
@@ -57,6 +59,7 @@ hook.Add('TTTUlxInitCustomCVar', 'TTTEmancipationGrillInitRWCvar', function(name
     ULib.replicatedWritableCvar('ttt_grill_max_distance', 'rep_ttt_grill_max_distance', GetConVar('ttt_grill_max_distance'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_height', 'rep_ttt_grill_height', GetConVar('ttt_grill_height'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_weapons', 'rep_ttt_grill_fizzle_weapons', GetConVar('ttt_grill_fizzle_weapons'):GetBool(), true, false, name)
+    ULib.replicatedWritableCvar('ttt_grill_fling_weapons', 'rep_ttt_grill_fling_weapons', GetConVar('ttt_grill_fling_weapons'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_corpses', 'rep_ttt_grill_fizzle_corpses', GetConVar('ttt_grill_fizzle_corpses'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_props', 'rep_ttt_grill_fizzle_props', GetConVar('ttt_grill_fizzle_props'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_projectiles', 'rep_ttt_grill_fizzle_projectiles', GetConVar('ttt_grill_fizzle_projectiles'):GetBool(), true, false, name)
@@ -75,7 +78,7 @@ if SERVER then
 
     -- A billion years of CVar replication boilerplate follows...
     -- (I have no idea if this is needed in 2023, but the TTT item/swep I am referencing does it.
-    -- Thanks to https://github.com/BadgerCode/TTT-Barnacle)
+    -- Thanks to https:--github.com/BadgerCode/TTT-Barnacle)
     hook.Add("TTT2SyncGlobals", "ttt_emancipation_grill_sync_convars", function()
         SetGlobalInt("ttt_grill_delay_time", GetConVar("ttt_grill_delay_time"):GetInt())
         SetGlobalInt("ttt_grill_fizzle_duration", GetConVar("ttt_grill_fizzle_duration"):GetInt())
@@ -86,6 +89,7 @@ if SERVER then
         SetGlobalInt("ttt_grill_max_distance", GetConVar("ttt_grill_max_distance"):GetInt())
         SetGlobalInt("ttt_grill_height", GetConVar("ttt_grill_height"):GetInt())
         SetGlobalInt("ttt_grill_fizzle_weapons", GetConVar("ttt_grill_fizzle_weapons"):GetBool())
+        SetGlobalInt("ttt_grill_fling_weapons", GetConVar("ttt_grill_fling_weapons"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_corpses", GetConVar("ttt_grill_fizzle_corpses"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_props", GetConVar("ttt_grill_fizzle_props"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_projectiles", GetConVar("ttt_grill_fizzle_projectiles"):GetBool())
@@ -124,6 +128,9 @@ if SERVER then
         end)
         cvars.AddChangeCallback("ttt_grill_fizzle_weapons", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_weapons", tobool(new))
+        end)
+        cvars.AddChangeCallback("ttt_grill_fling_weapons", function(cv, old, new)
+            SetGlobalInt("ttt_grill_fling_weapons", tobool(new))
         end)
         cvars.AddChangeCallback("ttt_grill_fizzle_corpses", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_corpses", tobool(new))
@@ -231,7 +238,7 @@ if CLIENT then
             parent = basicSettingsPanelList
         })
 
-        // max_distance
+        -- max_distance
         basicSettingsPanelList:AddItem(xlib.makeslider{
             label = "Grill Max Distance", 
             tooltip = "Maximum distance in HU that the Emancipation Grill can span.\n[ttt_grill_max_distance (default: " .. grill_max_distance .. ")]",
@@ -241,7 +248,7 @@ if CLIENT then
             parent = basicSettingsPanelList
         })
 
-        // height
+        -- height
         basicSettingsPanelList:AddItem(xlib.makeslider{
             label = "Grill Height", 
             tooltip = "Height of the Emancipation Grill. Gordon Freeman is 72 HU tall.\n[ttt_grill_height (default: " .. grill_height .. ")]",
@@ -261,52 +268,52 @@ if CLIENT then
         fizzleSettingsPanelList:SetSize(390, 6 * optionHeight)
         fizzleSettingsPanelList:SetSpacing(5)
         
-        // weapons
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- weapons
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Weapons?", 
             tooltip = "Boolean which controls whether the Grill fizzles weapons.\n[ttt_grill_fizzle_weapons (default: " .. grill_fizzle_weapons .. ")]",
             repconvar = "rep_ttt_grill_fizzle_weapons", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
-        // corpses
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- corpses
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Corpses?", 
             tooltip = "Boolean which controls whether the Grill fizzles corpses.\n[ttt_grill_fizzle_corpses (default: " .. grill_fizzle_corpses .. ")]",
             repconvar = "rep_ttt_grill_fizzle_corpses", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
-        // props
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- props
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Props?", 
             tooltip = "Boolean which controls whether the Grill fizzles props.\n[ttt_grill_fizzle_props (default: " .. grill_fizzle_props .. ")]",
             repconvar = "rep_ttt_grill_fizzle_props", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
-        //projectiles
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        --projectiles
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Projectiles?", 
             tooltip = "Boolean which controls whether the Grill fizzles projectiles.\n[ttt_grill_fizzle_projectiles (default: " .. grill_fizzle_projectiles .. ")]",
             repconvar = "rep_ttt_grill_fizzle_projectiles", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
-        // grenade_ents
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- grenade_ents
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Grenade Ents?", 
             tooltip = "Boolean which controls whether the Grill fizzles grenade ents (live grenades).\n[ttt_grill_fizzle_grenade_ents (default: " .. grill_fizzle_grenade_ents .. ")]",
             repconvar = "rep_ttt_grill_fizzle_grenade_ents", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
-        // own_team
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- own_team
+        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Own Team?", 
             tooltip = "Boolean which controls whether the Grill affects members of the team that placed it.\n[ttt_grill_fizzle_own_team (default: " .. grill_fizzle_own_team .. ")]",
             repconvar = "rep_ttt_grill_fizzle_own_team", 
-            parent = basicSettingsPanelList
+            parent = fizzleSettingsPanelList
         })
 
         local fizzleInventorySettingsCollapse = vgui.Create("DCollapsibleCategory", grillSettingsPanel)
@@ -316,55 +323,65 @@ if CLIENT then
 
         local fizzleInventorySettingsPanelList = vgui.Create("DPanelList", fizzleInventorySettingsCollapse)
         fizzleInventorySettingsPanelList:SetPos(5, 25)
-        fizzleInventorySettingsPanelList:SetSize(390, 6 * optionHeight)
+        fizzleInventorySettingsPanelList:SetSize(390, 7 * optionHeight)
         fizzleInventorySettingsPanelList:SetSpacing(5)
 
-        // pistols
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
+            label = "Fling Instead?",
+            tooltip = "Boolean which controls whether the Grill flings items instead of fizzling them.\n[ttt_grill_fling_instead (default: " .. grill_fling_instead .. ")]",
+            repconvar = "rep_ttt_grill_fling_weapons",
+            parent = fizzleInventorySettingsPanelList
+        })
+
+        -- pistols
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Pistols?", 
             tooltip = "Boolean which controls whether the Grill fizzles pistols.\n[ttt_grill_fizzle_pistols (default: " .. grill_fizzle_pistols .. ")]",
             repconvar = "rep_ttt_grill_fizzle_pistols", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
 
-        // rifles (and all other slot 2 items)
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- rifles (and all other slot 2 items)
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Rifles/Shotguns/SMG/Etc?", 
             tooltip = "Boolean which controls whether the Grill fizzles primary weapons.\n[ttt_grill_fizzle_rifles (default: " .. grill_fizzle_rifles .. ")]",
             repconvar = "rep_ttt_grill_fizzle_rifles", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
 
-        // grenade_weaps
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- grenade_weaps
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Grenade Weaps?", 
             tooltip = "Boolean which controls whether the Grill fizzles grenade weapons.\n[ttt_grill_fizzle_grenade_weaps (default: " .. grill_fizzle_grenade_weaps .. ")]",
             repconvar = "rep_ttt_grill_fizzle_grenade_weaps", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
 
-        // extra
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- extra
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Extra?", 
             tooltip = "Boolean which controls whether the Grill fizzles extra slot weapons.\n[ttt_grill_fizzle_extra (default: " .. grill_fizzle_extra .. ")]",
             repconvar = "rep_ttt_grill_fizzle_extra", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
 
-        // special
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- special
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle Special?", 
             tooltip = "Boolean which controls whether the Grill fizzles special slot weapons.\n[ttt_grill_fizzle_special (default: " .. grill_fizzle_special .. ")]",
             repconvar = "rep_ttt_grill_fizzle_special", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
 
-        // dna_scanner
-        basicSettingsPanelList:AddItem(xlib.makecheckbox{
+        -- dna_scanner
+        fizzleInventorySettingsPanelList:AddItem(xlib.makecheckbox{
             label = "Fizzle DNA Scanner?", 
             tooltip = "Boolean which controls whether the Grill fizzles DNA scanners. This overrides Fizzle Special.\n[ttt_grill_fizzle_dna_scanner (default: " .. grill_fizzle_dna_scanner .. ")]",
             repconvar = "rep_ttt_grill_fizzle_dna_scanner", 
-            parent = basicSettingsPanelList
+            parent = fizzleInventorySettingsPanelList
         })
-    )
+
+        xgui.hookEvent("onProcessModules", nil, grillSettingsPanel.processModules)
+        xgui.addSubModule("Emancipation Grill", grillSettingsPanel, nil, name)
+    end)
 end
