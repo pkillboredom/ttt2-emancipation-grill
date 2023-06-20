@@ -8,7 +8,7 @@ local grill_fizzle_volume        = 60 -- Volume of the Emancipation Grill's fizz
 local grill_fizzle_limit         = 0 -- Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.
 local grill_active_timer         = 0 -- Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.
 local grill_max_distance         = 144 -- Maximum distance in hammer units that the emancipation grill can span.
-local grill_height               = 60 -- Height of the Emancipation Grill in Hammer Units.
+--local grill_height               = 60 -- Height of the Emancipation Grill in Hammer Units.
 
 local grill_fizzle_weapons       = 1 -- Boolean which controls whether the Grill fizzles weapons.
 local grill_fling_weapons        = 0 -- Boolean which controls whether the Grill flings weapons. Requires ttt_grill_fizzle_weapons to be 1.
@@ -33,7 +33,7 @@ CreateConVar("ttt_grill_fizzle_volume", grill_fizzle_volume, {FCVAR_NOTIFY, FCVA
 CreateConVar("ttt_grill_fizzle_limit", grill_fizzle_limit, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_active_timer", grill_active_timer, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_max_distance", grill_max_distance, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_height", grill_height, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_height", grill_height, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_weapons", grill_fizzle_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fling_weapons", grill_fling_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_corpses", grill_fizzle_corpses, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
@@ -57,7 +57,7 @@ hook.Add('TTTUlxInitCustomCVar', 'TTTEmancipationGrillInitRWCvar', function(name
     ULib.replicatedWritableCvar('ttt_grill_fizzle_limit', 'rep_ttt_grill_fizzle_limit', GetConVar('ttt_grill_fizzle_limit'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_active_timer', 'rep_ttt_grill_active_timer', GetConVar('ttt_grill_active_timer'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_max_distance', 'rep_ttt_grill_max_distance', GetConVar('ttt_grill_max_distance'):GetInt(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_height', 'rep_ttt_grill_height', GetConVar('ttt_grill_height'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_height', 'rep_ttt_grill_height', GetConVar('ttt_grill_height'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_weapons', 'rep_ttt_grill_fizzle_weapons', GetConVar('ttt_grill_fizzle_weapons'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fling_weapons', 'rep_ttt_grill_fling_weapons', GetConVar('ttt_grill_fling_weapons'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_corpses', 'rep_ttt_grill_fizzle_corpses', GetConVar('ttt_grill_fizzle_corpses'):GetBool(), true, false, name)
@@ -87,7 +87,7 @@ if SERVER then
         SetGlobalInt("ttt_grill_fizzle_limit", GetConVar("ttt_grill_fizzle_limit"):GetInt())
         SetGlobalInt("ttt_grill_active_timer", GetConVar("ttt_grill_active_timer"):GetInt())
         SetGlobalInt("ttt_grill_max_distance", GetConVar("ttt_grill_max_distance"):GetInt())
-        SetGlobalInt("ttt_grill_height", GetConVar("ttt_grill_height"):GetInt())
+        --SetGlobalInt("ttt_grill_height", GetConVar("ttt_grill_height"):GetInt())
         SetGlobalInt("ttt_grill_fizzle_weapons", GetConVar("ttt_grill_fizzle_weapons"):GetBool())
         SetGlobalInt("ttt_grill_fling_weapons", GetConVar("ttt_grill_fling_weapons"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_corpses", GetConVar("ttt_grill_fizzle_corpses"):GetBool())
@@ -123,9 +123,9 @@ if SERVER then
         cvars.AddChangeCallback("ttt_grill_max_distance", function(cv, old, new)
             SetGlobalInt("ttt_grill_max_distance", tonumber(new))
         end)
-        cvars.AddChangeCallback("ttt_grill_height", function(cv, old, new)
-            SetGlobalInt("ttt_grill_height", tonumber(new))
-        end)
+        -- cvars.AddChangeCallback("ttt_grill_height", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_height", tonumber(new))
+        -- end)
         cvars.AddChangeCallback("ttt_grill_fizzle_weapons", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_weapons", tobool(new))
         end)
@@ -182,6 +182,7 @@ if CLIENT then
         local basicSettingsPanelList = vgui.Create("DPanelList", basicSettingsCollapse)
         basicSettingsPanelList:SetPos(5, 25)
         basicSettingsPanelList:SetSize(390, 8 * optionHeight)
+        --basicSettingsPanelList:SetSize(390, 7 * optionHeight)
         basicSettingsPanelList:SetSpacing(5)
 
         basicSettingsPanelList:AddItem(xlib.makeslider{
@@ -248,15 +249,15 @@ if CLIENT then
             parent = basicSettingsPanelList
         })
 
-        -- height
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Height", 
-            tooltip = "Height of the Emancipation Grill. Gordon Freeman is 72 HU tall.\n[ttt_grill_height (default: " .. grill_height .. ")]",
-            repconvar = "rep_ttt_grill_height", 
-            min = 0, 
-            max = 200, 
-            parent = basicSettingsPanelList
-        })
+        -- -- height
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Height", 
+        --     tooltip = "Height of the Emancipation Grill. Gordon Freeman is 72 HU tall.\n[ttt_grill_height (default: " .. grill_height .. ")]",
+        --     repconvar = "rep_ttt_grill_height", 
+        --     min = 0, 
+        --     max = 200, 
+        --     parent = basicSettingsPanelList
+        -- })
 
         local fizzleSettingsCollapse = vgui.Create("DCollapsibleCategory", grillSettingsPanel)
         fizzleSettingsCollapse:SetSize(390, 100)
