@@ -1,12 +1,12 @@
 -- Author pkillboredom 2023
 
 -- Defaults for Emancipation Grill.
-local grill_delay_time           = 10 -- Time in seconds before the Emancipation Grill activates after placement.
+--local grill_delay_time           = 10 -- Time in seconds before the Emancipation Grill activates after placement.
 local grill_fizzle_duration      = 4 -- Time in seconds that it takes for the Emancipation Grill to fizzle an object.
-local grill_idle_volume          = 10 -- Volume of the Emancipation Grill's idle sound.
-local grill_fizzle_volume        = 60 -- Volume of the Emancipation Grill's fizzle sound.
-local grill_fizzle_limit         = 0 -- Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.
-local grill_active_timer         = 0 -- Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.
+--local grill_idle_volume          = 10 -- Volume of the Emancipation Grill's idle sound.
+--local grill_fizzle_volume        = 60 -- Volume of the Emancipation Grill's fizzle sound.
+--local grill_fizzle_limit         = 0 -- Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.
+--local grill_active_timer         = 0 -- Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.
 local grill_max_distance         = 144 -- Maximum distance in hammer units that the emancipation grill can span.
 --local grill_height               = 60 -- Height of the Emancipation Grill in Hammer Units.
 
@@ -14,7 +14,7 @@ local grill_fizzle_weapons       = 1 -- Boolean which controls whether the Grill
 local grill_fling_weapons        = 0 -- Boolean which controls whether the Grill flings weapons. Requires ttt_grill_fizzle_weapons to be 1.
 local grill_fizzle_corpses       = 1 -- Boolean which controls whether the Grill fizzles corpses.
 local grill_fizzle_props         = 0 -- Boolean which controls whether the Grill fizzles props.
-local grill_fizzle_projectiles   = 1 -- Boolean which controls whether the Grill fizzles projectiles.
+--local grill_fizzle_projectiles   = 1 -- Boolean which controls whether the Grill fizzles projectiles.
 local grill_fizzle_grenade_ents  = 1 -- Boolean which controls whether the Grill fizzles grenades.
 local grill_fizzle_own_team      = 0 -- Boolean which controls whether the Grill fizzles the owner's team's weapons. Requires ttt_grill_fizzle_weapons to be 1.
 
@@ -26,19 +26,19 @@ local grill_fizzle_special       = 1 -- Boolean which controls whether the Grill
 local grill_fizzle_dna_scanner   = 0 -- Boolean which controls whether the Grill fizzles the DNA Scanner. Overrides grill_fizzle_special. Requires ttt_grill_fizzle_weapons to be 1.
 
 -- Create Con Vars
-CreateConVar("ttt_grill_delay_time", grill_delay_time, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_delay_time", grill_delay_time, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_duration", grill_fizzle_duration, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_idle_volume", grill_idle_volume, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_fizzle_volume", grill_fizzle_volume, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_fizzle_limit", grill_fizzle_limit, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_active_timer", grill_active_timer, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_idle_volume", grill_idle_volume, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_fizzle_volume", grill_fizzle_volume, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_fizzle_limit", grill_fizzle_limit, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_active_timer", grill_active_timer, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_max_distance", grill_max_distance, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 --CreateConVar("ttt_grill_height", grill_height, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_weapons", grill_fizzle_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fling_weapons", grill_fling_weapons, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_corpses", grill_fizzle_corpses, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_props", grill_fizzle_props, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
-CreateConVar("ttt_grill_fizzle_projectiles", grill_fizzle_projectiles, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
+--CreateConVar("ttt_grill_fizzle_projectiles", grill_fizzle_projectiles, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_grenade_ents", grill_fizzle_grenade_ents, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_own_team", grill_fizzle_own_team, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
 CreateConVar("ttt_grill_fizzle_pistols", grill_fizzle_pistols, {FCVAR_NOTIFY, FCVAR_ARCHIVE})
@@ -50,19 +50,19 @@ CreateConVar("ttt_grill_fizzle_dna_scanner", grill_fizzle_dna_scanner, {FCVAR_NO
 
 -- Set-up ULX ConVars
 hook.Add('TTTUlxInitCustomCVar', 'TTTEmancipationGrillInitRWCvar', function(name)
-    ULib.replicatedWritableCvar('ttt_grill_delay_time', 'rep_ttt_grill_delay_time', GetConVar('ttt_grill_delay_time'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_delay_time', 'rep_ttt_grill_delay_time', GetConVar('ttt_grill_delay_time'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_duration', 'rep_ttt_grill_fizzle_duration', GetConVar('ttt_grill_fizzle_duration'):GetInt(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_idle_volume', 'rep_ttt_grill_idle_volume', GetConVar('ttt_grill_idle_volume'):GetInt(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_fizzle_volume', 'rep_ttt_grill_fizzle_volume', GetConVar('ttt_grill_fizzle_volume'):GetInt(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_fizzle_limit', 'rep_ttt_grill_fizzle_limit', GetConVar('ttt_grill_fizzle_limit'):GetInt(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_active_timer', 'rep_ttt_grill_active_timer', GetConVar('ttt_grill_active_timer'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_idle_volume', 'rep_ttt_grill_idle_volume', GetConVar('ttt_grill_idle_volume'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_fizzle_volume', 'rep_ttt_grill_fizzle_volume', GetConVar('ttt_grill_fizzle_volume'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_fizzle_limit', 'rep_ttt_grill_fizzle_limit', GetConVar('ttt_grill_fizzle_limit'):GetInt(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_active_timer', 'rep_ttt_grill_active_timer', GetConVar('ttt_grill_active_timer'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_max_distance', 'rep_ttt_grill_max_distance', GetConVar('ttt_grill_max_distance'):GetInt(), true, false, name)
     --ULib.replicatedWritableCvar('ttt_grill_height', 'rep_ttt_grill_height', GetConVar('ttt_grill_height'):GetInt(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_weapons', 'rep_ttt_grill_fizzle_weapons', GetConVar('ttt_grill_fizzle_weapons'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fling_weapons', 'rep_ttt_grill_fling_weapons', GetConVar('ttt_grill_fling_weapons'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_corpses', 'rep_ttt_grill_fizzle_corpses', GetConVar('ttt_grill_fizzle_corpses'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_props', 'rep_ttt_grill_fizzle_props', GetConVar('ttt_grill_fizzle_props'):GetBool(), true, false, name)
-    ULib.replicatedWritableCvar('ttt_grill_fizzle_projectiles', 'rep_ttt_grill_fizzle_projectiles', GetConVar('ttt_grill_fizzle_projectiles'):GetBool(), true, false, name)
+    --ULib.replicatedWritableCvar('ttt_grill_fizzle_projectiles', 'rep_ttt_grill_fizzle_projectiles', GetConVar('ttt_grill_fizzle_projectiles'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_grenade_ents', 'rep_ttt_grill_fizzle_grenade_ents', GetConVar('ttt_grill_fizzle_grenade_ents'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_own_team', 'rep_ttt_grill_fizzle_own_team', GetConVar('ttt_grill_fizzle_own_team'):GetBool(), true, false, name)
     ULib.replicatedWritableCvar('ttt_grill_fizzle_pistols', 'rep_ttt_grill_fizzle_pistols', GetConVar('ttt_grill_fizzle_pistols'):GetBool(), true, false, name)
@@ -80,19 +80,19 @@ if SERVER then
     -- (I have no idea if this is needed in 2023, but the TTT item/swep I am referencing does it.
     -- Thanks to https:--github.com/BadgerCode/TTT-Barnacle)
     hook.Add("TTT2SyncGlobals", "ttt_emancipation_grill_sync_convars", function()
-        SetGlobalInt("ttt_grill_delay_time", GetConVar("ttt_grill_delay_time"):GetInt())
+        --SetGlobalInt("ttt_grill_delay_time", GetConVar("ttt_grill_delay_time"):GetInt())
         SetGlobalInt("ttt_grill_fizzle_duration", GetConVar("ttt_grill_fizzle_duration"):GetInt())
-        SetGlobalInt("ttt_grill_idle_volume", GetConVar("ttt_grill_idle_volume"):GetInt())
-        SetGlobalInt("ttt_grill_fizzle_volume", GetConVar("ttt_grill_fizzle_volume"):GetInt())
-        SetGlobalInt("ttt_grill_fizzle_limit", GetConVar("ttt_grill_fizzle_limit"):GetInt())
-        SetGlobalInt("ttt_grill_active_timer", GetConVar("ttt_grill_active_timer"):GetInt())
+        --SetGlobalInt("ttt_grill_idle_volume", GetConVar("ttt_grill_idle_volume"):GetInt())
+        --SetGlobalInt("ttt_grill_fizzle_volume", GetConVar("ttt_grill_fizzle_volume"):GetInt())
+        --SetGlobalInt("ttt_grill_fizzle_limit", GetConVar("ttt_grill_fizzle_limit"):GetInt())
+        --SetGlobalInt("ttt_grill_active_timer", GetConVar("ttt_grill_active_timer"):GetInt())
         SetGlobalInt("ttt_grill_max_distance", GetConVar("ttt_grill_max_distance"):GetInt())
         --SetGlobalInt("ttt_grill_height", GetConVar("ttt_grill_height"):GetInt())
         SetGlobalInt("ttt_grill_fizzle_weapons", GetConVar("ttt_grill_fizzle_weapons"):GetBool())
         SetGlobalInt("ttt_grill_fling_weapons", GetConVar("ttt_grill_fling_weapons"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_corpses", GetConVar("ttt_grill_fizzle_corpses"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_props", GetConVar("ttt_grill_fizzle_props"):GetBool())
-        SetGlobalInt("ttt_grill_fizzle_projectiles", GetConVar("ttt_grill_fizzle_projectiles"):GetBool())
+        --SetGlobalInt("ttt_grill_fizzle_projectiles", GetConVar("ttt_grill_fizzle_projectiles"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_grenade_ents", GetConVar("ttt_grill_fizzle_grenade_ents"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_own_team", GetConVar("ttt_grill_fizzle_own_team"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_pistols", GetConVar("ttt_grill_fizzle_pistols"):GetBool())
@@ -102,24 +102,24 @@ if SERVER then
         SetGlobalInt("ttt_grill_fizzle_special", GetConVar("ttt_grill_fizzle_special"):GetBool())
         SetGlobalInt("ttt_grill_fizzle_dna_scanner", GetConVar("ttt_grill_fizzle_dna_scanner"):GetBool())
 
-        cvars.AddChangeCallback("ttt_grill_delay_time", function(cv, old, new)
-            SetGlobalInt("ttt_grill_delay_time", tonumber(new))
-        end)
+        -- cvars.AddChangeCallback("ttt_grill_delay_time", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_delay_time", tonumber(new))
+        -- end)
         cvars.AddChangeCallback("ttt_grill_fizzle_duration", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_duration", tonumber(new))
         end)
-        cvars.AddChangeCallback("ttt_grill_idle_volume", function(cv, old, new)
-            SetGlobalInt("ttt_grill_idle_volume", tonumber(new))
-        end)
-        cvars.AddChangeCallback("ttt_grill_fizzle_volume", function(cv, old, new)
-            SetGlobalInt("ttt_grill_fizzle_volume", tonumber(new))
-        end)
-        cvars.AddChangeCallback("ttt_grill_fizzle_limit", function(cv, old, new)
-            SetGlobalInt("ttt_grill_fizzle_limit", tonumber(new))
-        end)
-        cvars.AddChangeCallback("ttt_grill_active_timer", function(cv, old, new)
-            SetGlobalInt("ttt_grill_active_timer", tonumber(new))
-        end)
+        -- cvars.AddChangeCallback("ttt_grill_idle_volume", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_idle_volume", tonumber(new))
+        -- end)
+        -- cvars.AddChangeCallback("ttt_grill_fizzle_volume", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_fizzle_volume", tonumber(new))
+        -- end)
+        -- cvars.AddChangeCallback("ttt_grill_fizzle_limit", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_fizzle_limit", tonumber(new))
+        -- end)
+        -- cvars.AddChangeCallback("ttt_grill_active_timer", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_active_timer", tonumber(new))
+        -- end)
         cvars.AddChangeCallback("ttt_grill_max_distance", function(cv, old, new)
             SetGlobalInt("ttt_grill_max_distance", tonumber(new))
         end)
@@ -138,9 +138,9 @@ if SERVER then
         cvars.AddChangeCallback("ttt_grill_fizzle_props", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_props", tobool(new))
         end)
-        cvars.AddChangeCallback("ttt_grill_fizzle_projectiles", function(cv, old, new)
-            SetGlobalInt("ttt_grill_fizzle_projectiles", tobool(new))
-        end)
+        -- cvars.AddChangeCallback("ttt_grill_fizzle_projectiles", function(cv, old, new)
+        --     SetGlobalInt("ttt_grill_fizzle_projectiles", tobool(new))
+        -- end)
         cvars.AddChangeCallback("ttt_grill_fizzle_grenade_ents", function(cv, old, new)
             SetGlobalInt("ttt_grill_fizzle_grenade_ents", tobool(new))
         end)
@@ -181,18 +181,17 @@ if CLIENT then
 
         local basicSettingsPanelList = vgui.Create("DPanelList", basicSettingsCollapse)
         basicSettingsPanelList:SetPos(5, 25)
-        basicSettingsPanelList:SetSize(390, 8 * optionHeight)
-        --basicSettingsPanelList:SetSize(390, 7 * optionHeight)
+        basicSettingsPanelList:SetSize(390, 2 * optionHeight)
         basicSettingsPanelList:SetSpacing(5)
 
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Start Delay Time", 
-            tooltip = "Time in seconds before the Emancipation Grill activates after placement.\n[ttt_grill_delay_time (default: " .. grill_delay_time .. ")]",
-            repconvar = "rep_ttt_grill_delay_time", 
-            min = 0, 
-            max = 60, 
-            parent = basicSettingsPanelList
-        })
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Start Delay Time", 
+        --     tooltip = "Time in seconds before the Emancipation Grill activates after placement.\n[ttt_grill_delay_time (default: " .. grill_delay_time .. ")]",
+        --     repconvar = "rep_ttt_grill_delay_time", 
+        --     min = 0, 
+        --     max = 60, 
+        --     parent = basicSettingsPanelList
+        -- })
 
         basicSettingsPanelList:AddItem(xlib.makeslider{
             label = "Grill Fizzle Duration", 
@@ -203,41 +202,41 @@ if CLIENT then
             parent = basicSettingsPanelList
         })
         
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Idle Volume", 
-            tooltip = "Volume of the Emancipation Grill when it is idle.\n[ttt_grill_idle_volume (default: " .. grill_idle_volume .. ")]",
-            repconvar = "rep_ttt_grill_idle_volume", 
-            min = 0, 
-            max = 300, 
-            parent = basicSettingsPanelList
-        })
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Idle Volume", 
+        --     tooltip = "Volume of the Emancipation Grill when it is idle.\n[ttt_grill_idle_volume (default: " .. grill_idle_volume .. ")]",
+        --     repconvar = "rep_ttt_grill_idle_volume", 
+        --     min = 0, 
+        --     max = 300, 
+        --     parent = basicSettingsPanelList
+        -- })
 
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Fizzle Volume", 
-            tooltip = "Volume of the Emancipation Grill's fizzle sound.\n[ttt_grill_fizzle_volume (default: " .. grill_fizzle_volume .. ")]",
-            repconvar = "rep_ttt_grill_fizzle_volume", 
-            min = 0, 
-            max = 300, 
-            parent = basicSettingsPanelList
-        })
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Fizzle Volume", 
+        --     tooltip = "Volume of the Emancipation Grill's fizzle sound.\n[ttt_grill_fizzle_volume (default: " .. grill_fizzle_volume .. ")]",
+        --     repconvar = "rep_ttt_grill_fizzle_volume", 
+        --     min = 0, 
+        --     max = 300, 
+        --     parent = basicSettingsPanelList
+        -- })
 
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Fizzle Limit", 
-            tooltip = "Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.\n[ttt_grill_fizzle_limit (default: " .. grill_fizzle_limit .. ")]",
-            repconvar = "rep_ttt_grill_fizzle_limit", 
-            min = 0, 
-            max = 20, 
-            parent = basicSettingsPanelList
-        })
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Fizzle Limit", 
+        --     tooltip = "Number of times the grill may fizzle (not including projectiles and grenade ents) before breaking. 0 for infinite.\n[ttt_grill_fizzle_limit (default: " .. grill_fizzle_limit .. ")]",
+        --     repconvar = "rep_ttt_grill_fizzle_limit", 
+        --     min = 0, 
+        --     max = 20, 
+        --     parent = basicSettingsPanelList
+        -- })
 
-        basicSettingsPanelList:AddItem(xlib.makeslider{
-            label = "Grill Active Timer", 
-            tooltip = "Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.\n[ttt_grill_active_timer (default: " .. grill_active_timer .. ")]",
-            repconvar = "rep_ttt_grill_active_timer", 
-            min = 0, 
-            max = 240, 
-            parent = basicSettingsPanelList
-        })
+        -- basicSettingsPanelList:AddItem(xlib.makeslider{
+        --     label = "Grill Active Timer", 
+        --     tooltip = "Time in seconds that the Emancipation Grill will work before breaking. 0 for infinite.\n[ttt_grill_active_timer (default: " .. grill_active_timer .. ")]",
+        --     repconvar = "rep_ttt_grill_active_timer", 
+        --     min = 0, 
+        --     max = 240, 
+        --     parent = basicSettingsPanelList
+        -- })
 
         -- max_distance
         basicSettingsPanelList:AddItem(xlib.makeslider{
@@ -266,7 +265,7 @@ if CLIENT then
 
         local fizzleSettingsPanelList = vgui.Create("DPanelList", fizzleSettingsCollapse)
         fizzleSettingsPanelList:SetPos(5, 25)
-        fizzleSettingsPanelList:SetSize(390, 6 * optionHeight)
+        fizzleSettingsPanelList:SetSize(390, 5 * optionHeight)
         fizzleSettingsPanelList:SetSpacing(5)
         
         -- weapons
@@ -293,13 +292,13 @@ if CLIENT then
             parent = fizzleSettingsPanelList
         })
 
-        --projectiles
-        fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
-            label = "Fizzle Projectiles?", 
-            tooltip = "Boolean which controls whether the Grill fizzles projectiles.\n[ttt_grill_fizzle_projectiles (default: " .. grill_fizzle_projectiles .. ")]",
-            repconvar = "rep_ttt_grill_fizzle_projectiles", 
-            parent = fizzleSettingsPanelList
-        })
+        -- --projectiles
+        -- fizzleSettingsPanelList:AddItem(xlib.makecheckbox{
+        --     label = "Fizzle Projectiles?", 
+        --     tooltip = "Boolean which controls whether the Grill fizzles projectiles.\n[ttt_grill_fizzle_projectiles (default: " .. grill_fizzle_projectiles .. ")]",
+        --     repconvar = "rep_ttt_grill_fizzle_projectiles", 
+        --     parent = fizzleSettingsPanelList
+        -- })
 
         -- grenade_ents
         fizzleSettingsPanelList:AddItem(xlib.makecheckbox{

@@ -16,14 +16,13 @@ ENT.Spawnable = false
 
 local vec10 = Vector(10, 10, 0)
 
-function ENT:SetupDataTables()
-    self:NetworkVar("Entity", 0, "Emitter1Ent")
-    self:NetworkVar("Entity", 1, "Emitter2Ent")
-    self:NetworkVar("Vector", 2, "MaxBound")
-    self:NetworkVar("Vector", 3, "MinBound")
-    self:NetworkVar("Angle", 4, "BoundAngle")
-    self:NetworkVar("Entity", 5, "SparkEnt")
-end
+ENT.Emitter1Ent = nil
+ENT.Emitter2Ent = nil
+ENT.MaxBound = Vector(0, 0, 0)
+ENT.MinBound = Vector(0, 0, 0)
+ENT.BoundAngle = Angle(0, 0, 0)
+ENT.SparkEnt = nil
+ENT.OwnerTeam = "TEAM_NONE"
 
 function ENT:Initialize()
     -- set up touch data
@@ -33,15 +32,21 @@ function ENT:Initialize()
     -- set up think timer to check for overlapping entities
     self:NextThink(CurTime())
 
-    if self:GetEmitter1Ent() == nil or self:GetEmitter2Ent() == nil then
+    if self.Emitter1Ent == nil or self.Emitter2Ent == nil then
         print("ERROR: Emancipation Grill is missing an emitter!")
         self:Remove()
         return false
     end
+
+    -- set OwnerTeam
+    if self:GetOwner() ~= nil and self:GetOwner():IsPlayer() then
+        self.OwnerTeam = self:GetOwner():GetTeam()
+    end
+
     -- get the distance between the two emitters
-    local dist = self:GetEmitter1Ent():GetPos():Distance(self:GetEmitter2Ent():GetPos())
+    local dist = self.Emitter1Ent:GetPos():Distance(self.Emitter2Ent:GetPos())
     -- get center of the box as the midpoint between the two emitters
-    local center = (self:GetEmitter1Ent():GetPos() + self:GetEmitter2Ent():GetPos()) / 2
+    local center = (self.Emitter1Ent:GetPos() + self.Emitter2Ent:GetPos()) / 2
     -- get the nearest ceiling and floor from center
     local ceiling = util.TraceLine({
         start = center,
@@ -62,32 +67,32 @@ function ENT:Initialize()
     if ceiling.z - floor.z <= HEIGHT then
         center.z = (ceiling.z + floor.z) / 2
         -- move the emitters z down to be lined up with center
-        self:GetEmitter1Ent():SetPos(Vector(self:GetEmitter1Ent():GetPos().x, self:GetEmitter1Ent():GetPos().y, center.z))
-        self:GetEmitter2Ent():SetPos(Vector(self:GetEmitter2Ent():GetPos().x, self:GetEmitter2Ent():GetPos().y, center.z))
+        self.Emitter1Ent:SetPos(Vector(self.Emitter1Ent:GetPos().x, self.Emitter1Ent:GetPos().y, center.z))
+        self.Emitter2Ent:SetPos(Vector(self.Emitter2Ent:GetPos().x, self.Emitter2Ent:GetPos().y, center.z))
     end
     self:SetPos(center)
     local max = Vector(dist / 2, 10, HEIGHT/2)
     local min = Vector(-dist / 2, -10, -HEIGHT/2)
     max.z = math.Clamp(max.z, floor.z - center.z, ceiling.z - center.z)
     min.z = math.Clamp(min.z, floor.z - center.z, ceiling.z - center.z)
-    self:SetMaxBound(max)
-    self:SetMinBound(min)
+    self.MaxBound = max
+    self.MinBound = min
     -- get orientation angle between the two emitters
-    local ang = (self:GetEmitter2Ent():GetPos() - self:GetEmitter1Ent():GetPos()):Angle()
-    self:SetBoundAngle(ang)
+    local ang = (self.Emitter2Ent:GetPos() - self.Emitter1Ent:GetPos()):Angle()
+    self.BoundAngle = ang
     -- debug draw a box with the angle
-    debugoverlay.BoxAngles(self:GetPos(), self:GetMinBound(), self:GetMaxBound(), self:GetBoundAngle(), 300, Color(0, 255, 0, 50), false)
-    debugoverlay.Box(self:GetPos(), self:GetMinBound(), self:GetMaxBound(), 300, Color(255, 0, 0, 50), false)
+    debugoverlay.BoxAngles(self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle, 300, Color(0, 255, 0, 50), false)
+    debugoverlay.Box(self:GetPos(), self.MinBound, self.MaxBound, 300, Color(255, 0, 0, 50), false)
 
     -- create spark ent 
-    self:SetSparkEnt(ents.Create("env_spark"))
-    self:GetSparkEnt():SetPos(self:GetPos())
-    self:GetSparkEnt():SetParent(self)
-    self:GetSparkEnt():SetKeyValue("MaxDelay", "0.1")
-    self:GetSparkEnt():SetKeyValue("Magnitude", "2")
-    self:GetSparkEnt():SetKeyValue("TrailLength", "2")
-    self:GetSparkEnt():Spawn()
-    self:GetSparkEnt():Activate()
+    self.SparkEnt = ents.Create("env_spark")
+    self.SparkEnt:SetPos(self:GetPos())
+    self.SparkEnt:SetParent(self)
+    self.SparkEnt:SetKeyValue("MaxDelay", "0.1")
+    self.SparkEnt:SetKeyValue("Magnitude", "2")
+    self.SparkEnt:SetKeyValue("TrailLength", "2")
+    self.SparkEnt:Spawn()
+    self.SparkEnt:Activate()
     -- add hook to EntityFireBullets to check if bullet will intersect with grill
     hook.Add("EntityFireBullets", "grill_bullet_check", function(shooterEnt, data)
         if IsValid(shooterEnt) then
@@ -95,7 +100,7 @@ function ENT:Initialize()
             -- check if bullet will pass through grill's OBB using TraceOBB
             local start = data.Src
             local endpos = data.Src + data.Dir * data.Distance
-            local hitPoint = TraceOBB(start, endpos, self:GetPos(), self:GetMinBound(), self:GetMaxBound(), self:GetBoundAngle())
+            local hitPoint = TraceOBB(start, endpos, self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle)
             
             -- if hit, change bullet's endpos to the hitpos
             if hitPoint ~= false then
@@ -107,8 +112,8 @@ function ENT:Initialize()
                 print("new distance: " .. data.Distance)
                 -- spark once at bullet endpos
                 -- TODO: This does not work because the hook is called in a buggy context, see SetPos hover docs
-                self:GetSparkEnt():SetPos(endpos) 
-                self:GetSparkEnt():Input("SparkOnce", NULL, NULL, NULL)
+                self.SparkEnt:SetPos(endpos) 
+                self.SparkEnt:Input("SparkOnce", NULL, NULL, NULL)
                 return true
             end
         end
@@ -129,135 +134,163 @@ function ENT:OnRemove()
 end
 
 function ENT:HandleTouch(ent)
-    if IsValid(ent) then
-        print("HandleTouch: " .. ent:GetClass())
-        if ent:IsPlayer() then
-            if GetConVar("ttt_grill_fizzle_weapons"):GetBool() == true then
-                -- Fling logic if CVAR ttt_grill_fling_weapons is true
-                if GetConVar("ttt_grill_fling_weapons"):GetBool() == true then
-                    if GetConVar("ttt_grill_fizzle_pistols"):GetBool() == true then
-                        local pistols = ent:GetWeaponsOnSlot(2)
-                        for _, v in pairs(pistols) do
-                            self:FlingEnt(v, ent, self)
-                        end
-                    end
-                    if GetConVar("ttt_grill_fizzle_rifles"):GetBool() == true then
-                        local rifles = ent:GetWeaponsOnSlot(3)
-                        for _, v in pairs(rifles) do
-                            self:FlingEnt(v, ent, self)
-                        end
-                    end
-                    if GetConVar("ttt_grill_fizzle_grenade_weaps"):GetBool() == true then
-                        local grenade_weaps = ent:GetWeaponsOnSlot(4)
-                        for _, v in pairs(grenade_weaps) do
-                            self:FlingEnt(v, ent, self)
-                        end
-                    end
-                    if GetConVar("ttt_grill_fizzle_extra"):GetBool() == true then
-                        local extras = ent:GetWeaponsOnSlot(7)
-                        for _, v in pairs(extras) do
-                            self:FlingEnt(v, ent, self)
-                        end
-                    end
-                    if GetConVar("ttt_grill_fizzle_special"):GetBool() == true then
-                        local special = ent:GetWeaponsOnSlot(8)
-                        for _, v in pairs(special) do
-                            if v:GetClass() == "weapon_ttt_wtester" 
-                                    and GetConVar("ttt_grill_fizzle_dna_scanner"):GetBool() == false then
-                                -- do nothing
-                            elseif v:GetClass() == "weapon_cigarro" then -- dont take away my smoky twizzles
-                                -- do nothing
-                            else
+    if SERVER then
+        if IsValid(ent) then
+            print("HandleTouch Class: " .. ent:GetClass())
+            if ent.Base ~= nil then
+                print("HandleTouch Base: " .. ent.Base)
+            else 
+                print("HandleTouch Base: nil")
+            end
+            if ent:IsPlayer() then
+                if ent:GetTeam() == self.OwnerTeam
+                        and GetConVar("ttt_grill_fizzle_own_team"):GetBool() == false then
+                    return
+                end
+                if GetConVar("ttt_grill_fizzle_weapons"):GetBool() == true then
+                    -- Fling logic if CVAR ttt_grill_fling_weapons is true
+                    if GetConVar("ttt_grill_fling_weapons"):GetBool() == true then
+                        if GetConVar("ttt_grill_fizzle_pistols"):GetBool() == true then
+                            local pistols = ent:GetWeaponsOnSlot(2)
+                            for _, v in pairs(pistols) do
                                 self:FlingEnt(v, ent, self)
                             end
                         end
-                    end
-                else -- Fizzle logic if CVAR ttt_grill_fling_weapons is false
-                    if GetConVar("ttt_grill_fizzle_pistols"):GetBool() == true then
-                        local pistols = ent:GetWeaponsOnSlot(2)
-                        for _, v in pairs(pistols) do
-                            self:FizzleEnt(v, ent)
+                        if GetConVar("ttt_grill_fizzle_rifles"):GetBool() == true then
+                            local rifles = ent:GetWeaponsOnSlot(3)
+                            for _, v in pairs(rifles) do
+                                self:FlingEnt(v, ent, self)
+                            end
                         end
-                    end
-                    if GetConVar("ttt_grill_fizzle_rifles"):GetBool() == true then
-                        local rifles = ent:GetWeaponsOnSlot(3)
-                        for _, v in pairs(rifles) do
-                            self:FizzleEnt(v, ent)
+                        if GetConVar("ttt_grill_fizzle_grenade_weaps"):GetBool() == true then
+                            local grenade_weaps = ent:GetWeaponsOnSlot(4)
+                            for _, v in pairs(grenade_weaps) do
+                                self:FlingEnt(v, ent, self)
+                            end
                         end
-                    end
-                    if GetConVar("ttt_grill_fizzle_grenade_weaps"):GetBool() == true then
-                        local grenade_weaps = ent:GetWeaponsOnSlot(4)
-                        for _, v in pairs(grenade_weaps) do
-                            self:FizzleEnt(v, ent)
+                        if GetConVar("ttt_grill_fizzle_extra"):GetBool() == true then
+                            local extras = ent:GetWeaponsOnSlot(7)
+                            for _, v in pairs(extras) do
+                                self:FlingEnt(v, ent, self)
+                            end
                         end
-                    end
-                    if GetConVar("ttt_grill_fizzle_extra"):GetBool() == true then
-                        local extras = ent:GetWeaponsOnSlot(7)
-                        for _, v in pairs(extras) do
-                            self:FizzleEnt(v, ent)
+                        if GetConVar("ttt_grill_fizzle_special"):GetBool() == true then
+                            local special = ent:GetWeaponsOnSlot(8)
+                            for _, v in pairs(special) do
+                                if v:GetClass() == "weapon_ttt_wtester" 
+                                        and GetConVar("ttt_grill_fizzle_dna_scanner"):GetBool() == false then
+                                    -- do nothing
+                                elseif v:GetClass() == "weapon_cigarro" then -- dont take away my smoky twizzles
+                                    -- do nothing
+                                else
+                                    self:FlingEnt(v, ent, self)
+                                end
+                            end
                         end
-                    end
-                    if GetConVar("ttt_grill_fizzle_special"):GetBool() == true then
-                        local special = ent:GetWeaponsOnSlot(8)
-                        for _, v in pairs(special) do
-                            if v:GetClass() == "weapon_ttt_wtester" 
-                                    and GetConVar("ttt_grill_fizzle_dna_scanner"):GetBool() == false then
-                                -- do nothing
-                            elseif v:GetClass() == "weapon_cigarro" then -- dont take away my smoky twizzles
-                                -- do nothing
-                            else
+                    else -- Fizzle logic if CVAR ttt_grill_fling_weapons is false
+                        if GetConVar("ttt_grill_fizzle_pistols"):GetBool() == true then
+                            local pistols = ent:GetWeaponsOnSlot(2)
+                            for _, v in pairs(pistols) do
                                 self:FizzleEnt(v, ent)
+                            end
+                        end
+                        if GetConVar("ttt_grill_fizzle_rifles"):GetBool() == true then
+                            local rifles = ent:GetWeaponsOnSlot(3)
+                            for _, v in pairs(rifles) do
+                                self:FizzleEnt(v, ent)
+                            end
+                        end
+                        if GetConVar("ttt_grill_fizzle_grenade_weaps"):GetBool() == true then
+                            local grenade_weaps = ent:GetWeaponsOnSlot(4)
+                            for _, v in pairs(grenade_weaps) do
+                                self:FizzleEnt(v, ent)
+                            end
+                        end
+                        if GetConVar("ttt_grill_fizzle_extra"):GetBool() == true then
+                            local extras = ent:GetWeaponsOnSlot(7)
+                            for _, v in pairs(extras) do
+                                self:FizzleEnt(v, ent)
+                            end
+                        end
+                        if GetConVar("ttt_grill_fizzle_special"):GetBool() == true then
+                            local special = ent:GetWeaponsOnSlot(8)
+                            for _, v in pairs(special) do
+                                if v:GetClass() == "weapon_ttt_wtester" 
+                                        and GetConVar("ttt_grill_fizzle_dna_scanner"):GetBool() == false then
+                                    -- do nothing
+                                elseif v:GetClass() == "weapon_cigarro" then -- dont take away my smoky twizzles
+                                    -- do nothing
+                                else
+                                    self:FizzleEnt(v, ent)
+                                end
                             end
                         end
                     end
                 end
+            -- if the ent has ttt_basegrenade_proj as a base class and has been thrown by a player
+            elseif (ent:GetClass() == "ttt_basegrenade_proj" or ent.Base == "ttt_basegrenade_proj") 
+                    and ent:GetOwner():IsPlayer() then
+                if ent:GetOwner():GetTeam() == self.OwnerTeam and GetConVar("ttt_grill_fizzle_own_team"):GetBool() == false then
+                    return
+                end
+                -- if the CVAR ttt_grill_fizzle_grenade_ents is true
+                if GetConVar("ttt_grill_fizzle_grenade_ents"):GetBool() == true then
+                    self:FizzleEnt(ent, _)
+                end
+            -- if the ent is a weapon not owned by a player AND the CVAR ttt_grill_fizzle_weapons is true
+            elseif ent:IsWeapon() and not ent:GetOwner():IsPlayer() 
+                    and GetConVar("ttt_grill_fizzle_weapons"):GetBool() == true then
+                -- fling if fling enabled
+                if GetConVar("ttt_grill_fling_weapons"):GetBool() == true then
+                    self:FlingEnt(ent, _, self)
+                else
+                    self:FizzleEnt(ent, _)
+                end
+            elseif ent:GetClass() == "prop_ragdoll" then
+                if GetConVar("ttt_grill_fizzle_corpses"):GetBool() == true and CORPSE.GetPlayerNick(ent, false) ~= false then
+                    local ownerPlayer = nil
+                    if ent:GetOwner():IsPlayer() then
+                        ownerPlayer = ent:GetOwner()
+                    end
+                    self:FizzleEnt(ent, ownerPlayer)
+                end
+            elseif ent:GetClass() == "prop_physics" then
+                if GetConVar("ttt_grill_fizzle_props"):GetBool() == true then
+                    local ownerPlayer = nil
+                    if ent:GetOwner():IsPlayer() then
+                        ownerPlayer = ent:GetOwner()
+                    end
+                    self:FizzleEnt(ent, ownerPlayer)
+                end
             end
-        -- if the ent has ttt_basegrenade_proj as a base class and has been thrown by a player
-        elseif (ent:GetClass() == "ttt_basegrenade_proj" or ent.Base == "ttt_basegrenade_proj") 
-                and ent:GetOwner():IsPlayer() then
-            -- if the CVAR ttt_grill_fizzle_grenade_ents is true
-            if GetConVar("ttt_grill_fizzle_grenade_ents"):GetBool() == true then
-                self:FizzleEnt(ent, _)
-            end
-        -- if the ent is a weapon not owned by a player AND the CVAR ttt_grill_fizzle_weapons is true
-        elseif ent:IsWeapon() and not ent:GetOwner():IsPlayer() 
-                and GetConVar("ttt_grill_fizzle_weapons"):GetBool() == true then
-            -- fling if fling enabled
-            if GetConVar("ttt_grill_fling_weapons"):GetBool() == true then
-                self:FlingEnt(ent, _, self)
-            else
-                self:FizzleEnt(ent, _)
-            end
-        elseif ent:GetClass() == "prop_ragdoll" then
-            if GetConVar("ttt_grill_fizzle_corpses"):GetBool() == true and CORPSE.GetPlayerNick(ent, false) ~= false then
-                self:FizzleEnt(ent, _)
-            end
-        elseif ent:GetClass() == "prop_physics" then
         end
     end
 end
 
-function ENT:Think()
-    if SERVER then
-        local worldMins = self:LocalToWorld(self:GetMinBound())
-        local worldMaxs = self:LocalToWorld(self:GetMaxBound())
+if SERVER then
+    function ENT:Think()
+        local worldMins = self:LocalToWorld(self.MinBound)
+        local worldMaxs = self:LocalToWorld(self.MaxBound)
         local worldCenter = self:GetPos()
 
         local entities = ents.FindInBox(worldMins, worldMaxs)
 
         -- iterate through entities and check if they are touching the trigger
         for _, ent in ipairs(entities) do
-            if ent ~= self then
+            if ent ~= self 
+                    and ent ~= self.Emitter1Ent 
+                    and ent ~= self.Emitter2Ent
+                    and ent:GetClass() ~= "env_spark" then
                 -- if ent is in fizzling table, skip it
                 if self.FizzlingEntities[ent] then
                     -- skip this entity
-                else if (ent:IsWeapon() or ent:IsPlayer()) then
-                    --print("weapon/player found: " .. ent:GetClass())
+                elseif (ent:IsWeapon() or ent:IsPlayer()) then
+                    print("weapon/player found: " .. ent:GetClass())
                     -- check if ent phys obj is inside obb
                     -- get center of ent collision bounds
                     local worldPos = ent:LocalToWorld(ent:OBBCenter())
                     local localPos = self:WorldToLocal(worldPos)
-                    local isEntCenterInOBB = IsPointInOBB(worldPos, worldCenter, self:GetBoundAngle(), self:GetMinBound(), self:GetMaxBound(), ent:IsPlayer())
+                    local isEntCenterInOBB = IsPointInOBB(worldPos, worldCenter, self.BoundAngle, self.MinBound, self.MaxBound, ent:IsPlayer())
                     --print ("isEntCenterInOBB: " .. tostring(isEntCenterInOBB))
                     -- check if the entity is already touching the trigger
                     if isEntCenterInOBB and not self.TouchingEntities[ent] then
@@ -265,12 +298,10 @@ function ENT:Think()
                         self:HandleTouch(ent)
                         self.TouchingEntities[ent] = true
                     end
-                elseif (ent:GetClass() == "prop_ragdoll" and CORPSE.GetPlayerNick(ent, false) ~= false) then
-                    if GetConVar("ttt_grill_fizzle_corpses"):GetBool() == true then
-                        if AreOBBsIntersecting(self:GetPos(), self:GetMinBound(), self:GetMaxBound(), self:GetBoundAngle(), ent:GetPos(), ent:OBBMins(), ent:OBBMaxs(), ent:GetAngles()) then
-                            self:HandleTouch(ent)
-                            self.TouchingEntities[ent] = true
-                        end
+                else
+                    if AreOBBsIntersecting(self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle, ent:GetPos(), ent:OBBMins(), ent:OBBMaxs(), ent:GetAngles()) then
+                        self:HandleTouch(ent)
+                        self.TouchingEntities[ent] = true
                     end
                 end
             end
@@ -286,12 +317,12 @@ function ENT:Think()
                 if (ent:IsWeapon() or ent:IsPlayer()) then
                     local worldPos = ent:GetPos()
                     local localPos = self:WorldToLocal(worldPos)
-                    if not IsPointInOBB(worldPos, worldCenter, self:GetBoundAngle(), self:GetMinBound(), self:GetMaxBound(), ent:IsPlayer()) then
+                    if not IsPointInOBB(worldPos, worldCenter, self.BoundAngle, self.MinBound, self.MaxBound, ent:IsPlayer()) then
                         self.TouchingEntities[ent] = nil
                         --self:EndTouch(ent)
                     end
                 elseif (ent:GetClass() == "prop_ragdoll") then
-                    if not AreOBBsIntersecting(self:GetPos(), self:GetMinBound(), self:GetMaxBound(), self:GetBoundAngle(), ent:GetPos(), ent:OBBMins(), ent:OBBMaxs(), ent:GetAngles()) then
+                    if not AreOBBsIntersecting(self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle, ent:GetPos(), ent:OBBMins(), ent:OBBMaxs(), ent:GetAngles()) then
                         self.TouchingEntities[ent] = nil
                     end
                 end
@@ -301,6 +332,140 @@ function ENT:Think()
         -- set up next think timer for 1/33rd of a second
         self:NextThink(CurTime() + (1 / 33))
         return true
+    end
+end
+
+function ENT:FlingEnt(ent, player, this)
+    if SERVER then
+        if ent:IsWeapon() and ent:GetOwner() == player then 
+            -- make weapon drop
+            player:DropWeapon(ent)
+            -- make weapon fly away from the face they entered the collision volume at, ignoring z
+            local playerpos = player:GetPos()
+            ent:GetPhysicsObject():SetVelocity((Vector(playerpos.x, playerpos.y, this:GetPos().z) - this:GetPos()) * 1000)
+        else
+            -- make ent fly away from the face it entered the collision volume at, ignoring z
+            local entpos = ent:GetPos()
+            ent:GetPhysicsObject():SetVelocity((Vector(entpos.x, entpos.y, this:GetPos().z) - this:GetPos()) * 1000)
+        end
+        -- create an env_spark attached to the prop
+        local spark = ents.Create("env_spark")
+        spark:Spawn()
+        spark:Activate()
+        spark:SetPos(ent:GetPos())
+        spark:SetKeyValue("MaxDelay", "0.8")
+        spark:SetKeyValue("Magnitude", "2")
+        spark:SetKeyValue("TrailLength", "2")
+        spark:SetParent(ent)
+        spark:Input("StartSpark", NULL, NULL, NULL)
+        -- delete the spark ent after 2 seconds
+        timer.Simple(2, function()
+            if IsValid(spark) then
+                spark:Remove()
+            end
+        end)
+    end
+end
+
+function ENT:FizzleEnt(ent, ownerPlayer)
+    if SERVER then
+        local propEnt = ent
+        -- first make any players carrying this ent drop it
+        -- find all weapon_zm_carry entities on players
+        local carryEnts = ents.FindByClass("weapon_zm_carry")
+        print ("carryEnts count: " .. table.Count(carryEnts))
+        for k, v in pairs(carryEnts) do
+            -- this ent may be the weapon_zm_carry carryhack. try to find out using assumptions.
+            if v:GetOwner() == ownerPlayer
+                    and v.EntHolding ~= nil 
+                    and v.EntHolding:GetOwner() == ownerPlayer
+                    and v.CarryHack:GetClass() == propEnt:GetClass() then
+                print ("found a weapon_zm_carry entity that is carrying something")
+                -- remove CarryHack, this will reset the weapon_zm_carry entity as well
+                v.CarryHack:Remove()
+                -- if propEnt model is a bugbait, this is probably the CarryHack entity
+                -- just return, the ent wont exist next tick
+                if propEnt:GetModel() == "models/weapons/w_bugbait.mdl" then
+                    -- This might mean that bugbait props won't fizzle, but who cares!
+                    return
+                end
+            end
+        end
+        if (ent:GetClass() ~= "prop_ragdoll") then 
+            -- get the world model of the weapon
+            local ent_worldmodel = ent:GetModel()
+            local spawnpos = nil
+            local newVel = nil
+            local propType = "prop_physics"
+            -- check if this is a weapon held by player
+            if ent:IsWeapon() and ent:GetOwner():IsPlayer() then
+                -- remove the weapon from the player
+                spawnpos = ownerPlayer:GetPos()
+                newVel = ownerPlayer:GetAimVector() * 100
+                ownerPlayer:StripWeapon(ent:GetClass())
+            else
+                -- set spawnpos to ent position
+                spawnpos = ent:GetPos()
+                -- newVel should be entity velocity 
+                newVel = ent:GetVelocity()
+                ent:Remove()
+            end
+            -- spawn the weapon as a prop at the player's position
+            local prop = ents.Create("prop_physics")
+            prop:SetModel(ent_worldmodel)
+            -- spawn the prop
+            prop:Spawn()
+            prop:Activate()
+            propEnt = prop
+            propEnt:SetPos(spawnpos)
+            -- make prop drift forward with random deviation and spin slowly with randommness
+            propEnt:GetPhysicsObject():SetVelocity(newVel)
+        else
+            propEnt:SetParent(nil)
+            -- push ragdoll up toward the sky
+            propEnt:SetVelocity(Vector(0, 0, 500))
+            -- make ragdoll's bones have no gravity
+            for i = 0, propEnt:GetPhysicsObjectCount() - 1 do
+                local bone = propEnt:GetPhysicsObjectNum(i)
+                if IsValid(bone) then
+                    bone:EnableGravity(false)
+                end
+            end
+            -- make this ragdoll unsearchable by adding NW bool FizzleRagdoll
+            propEnt:SetNWBool("FizzleRagdoll", true)
+        end
+
+        -- make prop black
+        propEnt:SetMaterial("models/debug/debugwhite")
+        propEnt:SetColor(Color(0, 0, 0, 255))
+        propEnt:GetPhysicsObject():ApplyTorqueCenter(VectorRand() * 10)
+        -- make prop collide with nothing
+        propEnt:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+        propEnt:GetPhysicsObject():EnableGravity(false)
+
+        -- add prop to fizzling table so that this function is not called again.
+        self.FizzlingEntities[propEnt] = true
+
+        -- create an env_spark attached to the prop
+        local spark = ents.Create("env_spark")
+        --print("Created prop fizzle spark")
+        spark:Spawn()
+        spark:Activate()
+        spark:SetPos(propEnt:GetPos())
+        spark:SetKeyValue("MaxDelay", "0.8")
+        spark:SetKeyValue("Magnitude", "2")
+        spark:SetKeyValue("TrailLength", "2")
+        spark:SetParent(propEnt)
+        spark:Input("StartSpark", NULL, NULL, NULL)
+
+        -- remove prop after CVAR ttt_grill_fizzle_duration seconds
+        timer.Simple(GetConVar("ttt_grill_fizzle_duration"):GetInt(), function()
+            if IsValid(propEnt) then
+                -- remove prop from fizzling table
+                self.FizzlingEntities[propEnt] = nil
+                propEnt:Remove()
+            end
+        end)
     end
 end
 
@@ -513,122 +678,4 @@ function AngleToMatrix(ang)
     matrix[3] = Vector(cosYaw * sinRoll * cosPitch + sinYaw * sinPitch, sinYaw * sinRoll * cosPitch - cosYaw * sinPitch, cosRoll * cosPitch)
 
     return matrix
-end
-
-function ENT:FlingEnt(ent, player, this)
-    if ent:IsWeapon() and ent:GetOwner() == player then 
-        -- make weapon drop
-        player:DropWeapon(ent)
-        -- make weapon fly away from the face they entered the collision volume at, ignoring z
-        local playerpos = player:GetPos()
-        ent:GetPhysicsObject():SetVelocity((Vector(playerpos.x, playerpos.y, this:GetPos().z) - this:GetPos()) * 1000)
-    else
-        -- make ent fly away from the face it entered the collision volume at, ignoring z
-        local entpos = ent:GetPos()
-        ent:GetPhysicsObject():SetVelocity((Vector(entpos.x, entpos.y, this:GetPos().z) - this:GetPos()) * 1000)
-    end
-    -- create an env_spark attached to the prop
-    local spark = ents.Create("env_spark")
-    spark:Spawn()
-    spark:Activate()
-    spark:SetPos(ent:GetPos())
-    spark:SetKeyValue("MaxDelay", "0.8")
-    spark:SetKeyValue("Magnitude", "2")
-    spark:SetKeyValue("TrailLength", "2")
-    spark:SetParent(ent)
-    spark:Input("StartSpark", NULL, NULL, NULL)
-    -- delete the spark ent after 2 seconds
-    timer.Simple(2, function()
-        if IsValid(spark) then
-            spark:Remove()
-        end
-    end)
-end
-
-function ENT:FizzleEnt(ent, player)
-    local propEnt = ent
-    if (ent:GetClass() ~= "prop_ragdoll") then 
-        -- get the world model of the weapon
-        local ent_worldmodel = ent:GetModel()
-        local spawnpos = nil
-        local newVel = nil
-        local propType = "prop_physics"
-        -- check if this is a weapon held by player
-        if ent:IsWeapon() and ent:GetOwner():IsPlayer() then
-            -- remove the weapon from the player
-            spawnpos = player:GetPos()
-            newVel = player:GetAimVector() * 100
-            player:StripWeapon(ent:GetClass())
-        else
-            -- set spawnpos to ent position
-            spawnpos = ent:GetPos()
-            -- newVel should be entity velocity 
-            newVel = ent:GetVelocity()
-            ent:Remove()
-        end
-        -- spawn the weapon as a prop at the player's position
-        local prop = ents.Create("prop_physics")
-        prop:SetModel(ent_worldmodel)
-        -- spawn the prop
-        prop:Spawn()
-        prop:Activate()
-        propEnt = prop
-        propEnt:SetPos(spawnpos)
-        -- make prop drift forward with random deviation and spin slowly with randommness
-        propEnt:GetPhysicsObject():SetVelocity(newVel)
-    else
-        propEnt:SetParent(nil)
-        -- push ragdoll up toward the sky
-        propEnt:SetVelocity(Vector(0, 0, 500))
-        -- make ragdoll's bones have no gravity
-        for i = 0, propEnt:GetPhysicsObjectCount() - 1 do
-            local bone = propEnt:GetPhysicsObjectNum(i)
-            if IsValid(bone) then
-                bone:EnableGravity(false)
-            end
-        end
-        -- find all weapon_zm_carry entities on players
-        local carryEnts = ents.FindByClass("weapon_zm_carry")
-        -- find the weapon_zm_carry entity that has EntHolding = propEnt
-        for k, v in pairs(carryEnts) do
-            if v.EntHolding == propEnt then
-                -- set EntHolding to nil
-                v.EntHolding = nil
-            end
-        end
-        -- make this ragdoll unsearchable by adding NW bool FizzleRagdoll
-        propEnt:SetNWBool("FizzleRagdoll", true)
-    end
-
-    -- make prop black
-    propEnt:SetMaterial("models/debug/debugwhite")
-    propEnt:SetColor(Color(0, 0, 0, 255))
-    propEnt:GetPhysicsObject():ApplyTorqueCenter(VectorRand() * 10)
-    -- make prop collide with nothing
-    propEnt:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
-    propEnt:GetPhysicsObject():EnableGravity(false)
-
-    -- add prop to fizzling table so that this function is not called again.
-    self:FizzlingEntities[propEnt] = true
-
-    -- create an env_spark attached to the prop
-    local spark = ents.Create("env_spark")
-    print("Created prop fizzle spark")
-    spark:Spawn()
-    spark:Activate()
-    spark:SetPos(propEnt:GetPos())
-    spark:SetKeyValue("MaxDelay", "0.8")
-    spark:SetKeyValue("Magnitude", "2")
-    spark:SetKeyValue("TrailLength", "2")
-    spark:SetParent(propEnt)
-    spark:Input("StartSpark", NULL, NULL, NULL)
-
-    -- remove prop after CVAR ttt_grill_fizzle_duration seconds
-    timer.Simple(GetConVar("ttt_grill_fizzle_duration"):GetInt(), function()
-        if IsValid(propEnt) then
-            -- remove prop from fizzling table
-            self:FizzlingEntities[propEnt] = nil
-            propEnt:Remove()
-        end
-    end)
 end

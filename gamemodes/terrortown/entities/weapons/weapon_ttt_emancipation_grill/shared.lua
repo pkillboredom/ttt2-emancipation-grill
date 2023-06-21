@@ -134,8 +134,8 @@ function SWEP:PrimaryAttack()
                 -- create the grill entity
                 grillEnt = ents.Create("ttt_emancipation_grill") // TODO: create this entity!
                 if IsValid(grillEnt) then
-                    grillEnt:SetEmitter1Ent(self.firstEmitterEnt)
-                    grillEnt:SetEmitter2Ent(self.secondEmitterEnt)
+                    grillEnt.Emitter1Ent = self.firstEmitterEnt
+                    grillEnt.Emitter2Ent = self.secondEmitterEnt
                     grillEnt:SetOwner(ply)
                     grillEnt:SetDamageOwner(ply)
                     grillEnt:Spawn()
