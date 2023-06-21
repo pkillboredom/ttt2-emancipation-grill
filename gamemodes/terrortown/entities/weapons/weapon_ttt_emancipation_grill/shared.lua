@@ -97,7 +97,7 @@ function SWEP:PrimaryAttack()
                 self.firstEmitterEnt:Activate()
                 self.firstEmitterEnt:SetOwner(ply)
                 -- play sound
-                self.Owner:EmitSound(placeSound, 25)
+                self.Owner:EmitSound(placeSound, 45)
             end
         else
             -- check if player is looking at a position that is not too close to the first emitter
@@ -122,7 +122,7 @@ function SWEP:PrimaryAttack()
                 self.secondEmitterEnt:Activate()
                 self.secondEmitterEnt:SetOwner(ply)
                 -- play sound
-                self.Owner:EmitSound(placeSound, 25)
+                self.Owner:EmitSound(placeSound, 45)
                 -- set first emitter to solid color
                 self.firstEmitterEnt:SetColor(Color(255, 255, 255, 255))
                 -- make both emitters' angles face each other
