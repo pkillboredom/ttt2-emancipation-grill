@@ -1,13 +1,8 @@
 -- Author pkillboredom 2023
 
--- Where TRIGGER WORKAROUND is noted:
--- This is a workaround for engine behavior where trigger events are
--- not called when two triggers touch. See:  https://github.com/pmrowla/hl2sdk-csgo/blob/master/game/shared/physics_main_shared.cpp#L954
-
-
 AddCSLuaFile()
 
-ENT.Type = "point"
+ENT.Type = "anim"
 
 ENT.ClassName = "ttt_emancipation_grill"
 ENT.PrintName = "Emancipation Grill"
@@ -15,11 +10,16 @@ ENT.Author = "pkillboredom"
 ENT.Spawnable = false
 
 local vec10 = Vector(10, 10, 0)
+local tickTime = (1 / 33)
 
 ENT.Emitter1Ent = nil
 ENT.Emitter2Ent = nil
 ENT.MaxBound = Vector(0, 0, 0)
 ENT.MinBound = Vector(0, 0, 0)
+ENT.TestMinBound = Vector(0, 0, 0)
+ENT.TestMaxBound = Vector(0, 0, 0)
+ENT.WorldTestMinBound = Vector(0, 0, 0)
+ENT.WorldTestMaxBound = Vector(0, 0, 0)
 ENT.BoundAngle = Angle(0, 0, 0)
 ENT.SparkEnt = nil
 ENT.OwnerTeam = "TEAM_NONE"
@@ -32,95 +32,141 @@ function ENT:Initialize()
     -- set up think timer to check for overlapping entities
     self:NextThink(CurTime())
 
-    if self.Emitter1Ent == nil or self.Emitter2Ent == nil then
-        print("ERROR: Emancipation Grill is missing an emitter!")
-        self:Remove()
-        return false
-    end
+    self:SetModel("models/hunter/plates/plate.mdl")
+    self:SetSolid(SOLID_NONE)
+    self:SetMoveType(MOVETYPE_NONE)
+    self:SetCollisionGroup(COLLISION_GROUP_DEBRIS)
+    self:SetMaterial("models/debug/debugwhite")
+    self:SetColor(Color(255, 255, 255, 0))
+    self:SetRenderMode(RENDERMODE_TRANSCOLOR)
 
-    -- set OwnerTeam
-    if self:GetOwner() ~= nil and self:GetOwner():IsPlayer() then
-        self.OwnerTeam = self:GetOwner():GetTeam()
-    end
-
-    -- get the distance between the two emitters
-    local dist = self.Emitter1Ent:GetPos():Distance(self.Emitter2Ent:GetPos())
-    -- get center of the box as the midpoint between the two emitters
-    local center = (self.Emitter1Ent:GetPos() + self.Emitter2Ent:GetPos()) / 2
-    -- get the nearest ceiling and floor from center
-    local ceiling = util.TraceLine({
-        start = center,
-        endpos = center + Vector(0, 0, 1000),
-        filter = function(ent) if ent:GetClass() == "func_brush" then return true end end
-    }).HitPos
-    print ("ceiling: " .. tostring(ceiling))
-    local floor = util.TraceLine({
-        start = center,
-        endpos = center - Vector(0, 0, 1000),
-        filter = function(ent) if ent:GetClass() == "func_brush" then return true end end
-    }).HitPos
-    print ("floor: " .. tostring(floor))
-    -- create maxs and mins for a box dist units wide, 20 units deep, HEIGHT units tall
-    -- clamp bounds to ceiling and floor's z in local space
-    local HEIGHT = 128
-    -- if z distance between ceiling and floor is less than HEIGHT, move center to halfway between ceiling and floor
-    if ceiling.z - floor.z <= HEIGHT then
-        center.z = (ceiling.z + floor.z) / 2
-        -- move the emitters z down to be lined up with center
-        self.Emitter1Ent:SetPos(Vector(self.Emitter1Ent:GetPos().x, self.Emitter1Ent:GetPos().y, center.z))
-        self.Emitter2Ent:SetPos(Vector(self.Emitter2Ent:GetPos().x, self.Emitter2Ent:GetPos().y, center.z))
-    end
-    self:SetPos(center)
-    local max = Vector(dist / 2, 10, HEIGHT/2)
-    local min = Vector(-dist / 2, -10, -HEIGHT/2)
-    max.z = math.Clamp(max.z, floor.z - center.z, ceiling.z - center.z)
-    min.z = math.Clamp(min.z, floor.z - center.z, ceiling.z - center.z)
-    self.MaxBound = max
-    self.MinBound = min
-    -- get orientation angle between the two emitters
-    local ang = (self.Emitter2Ent:GetPos() - self.Emitter1Ent:GetPos()):Angle()
-    self.BoundAngle = ang
-    -- debug draw a box with the angle
-    debugoverlay.BoxAngles(self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle, 300, Color(0, 255, 0, 50), false)
-    debugoverlay.Box(self:GetPos(), self.MinBound, self.MaxBound, 300, Color(255, 0, 0, 50), false)
-
-    -- create spark ent 
-    self.SparkEnt = ents.Create("env_spark")
-    self.SparkEnt:SetPos(self:GetPos())
-    self.SparkEnt:SetParent(self)
-    self.SparkEnt:SetKeyValue("MaxDelay", "0.1")
-    self.SparkEnt:SetKeyValue("Magnitude", "2")
-    self.SparkEnt:SetKeyValue("TrailLength", "2")
-    self.SparkEnt:Spawn()
-    self.SparkEnt:Activate()
-    -- add hook to EntityFireBullets to check if bullet will intersect with grill
-    hook.Add("EntityFireBullets", "grill_bullet_check", function(shooterEnt, data)
-        if IsValid(shooterEnt) then
-            --print("EntityFireBullets: " .. shooterEnt:GetClass())
-            -- check if bullet will pass through grill's OBB using TraceOBB
-            local start = data.Src
-            local endpos = data.Src + data.Dir * data.Distance
-            local hitPoint = TraceOBB(start, endpos, self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle)
-            
-            -- if hit, change bullet's endpos to the hitpos
-            if hitPoint ~= false then
-                --print("hit grill!")
-                endpos = hitPoint
-                debugoverlay.Cross(endpos, 10, 10, Color(255, 0, 0), false)
-                print("old distance: " .. data.Distance)
-                data.Distance = endpos:Distance(start)
-                print("new distance: " .. data.Distance)
-                -- spark once at bullet endpos
-                -- TODO: This does not work because the hook is called in a buggy context, see SetPos hover docs
-                self.SparkEnt:SetPos(endpos) 
-                self.SparkEnt:Input("SparkOnce", NULL, NULL, NULL)
-                return true
+    self.psystem = nil
+    -- hide model
+    if CLIENT then
+        self:SetNoDraw(true)
+        hook.Add("NotifyShouldTransmit", "grill_shouldtransmit", function(ent, shouldtransmit)
+            if ent == self and shouldtransmit == true then
+                self:SetNoDraw(true);
+                print("Is psystem valid?: " .. tostring(IsValid(self.psystem)))
+                if IsValid(self.psystem) then
+                    self.psystem:SetShouldDraw(true)
+                    self.psystem:StartEmission()
+                end
             end
+        end)
+    end
+
+    if SERVER then 
+        if self.Emitter1Ent == nil or self.Emitter2Ent == nil then
+            print("ERROR: Emancipation Grill is missing an emitter!")
+            self:Remove()
+            return false
         end
-    end)
+
+        -- set OwnerTeam
+        if self:GetOwner() ~= nil and self:GetOwner():IsPlayer() then
+            self.OwnerTeam = self:GetOwner():GetTeam()
+        end
+
+        -- get the distance between the two emitters
+        local dist = self.Emitter1Ent:GetPos():Distance(self.Emitter2Ent:GetPos())
+        -- get center of the box as the midpoint between the two emitters
+        local center = (self.Emitter1Ent:GetPos() + self.Emitter2Ent:GetPos()) / 2
+        -- get the nearest ceiling and floor from center
+        local ceiling = util.TraceLine({
+            start = center,
+            endpos = center + Vector(0, 0, 1000),
+            filter = function(ent) if ent:GetClass() == "func_brush" then return true end end
+        }).HitPos
+        --print ("ceiling: " .. tostring(ceiling))
+        local floor = util.TraceLine({
+            start = center,
+            endpos = center - Vector(0, 0, 1000),
+            filter = function(ent) if ent:GetClass() == "func_brush" then return true end end
+        }).HitPos
+        --print ("floor: " .. tostring(floor))
+        -- create maxs and mins for a box dist units wide, 20 units deep, HEIGHT units tall
+        -- clamp bounds to ceiling and floor's z in local space
+        local HEIGHT = 128
+        -- if z distance between ceiling and floor is less than HEIGHT, move center to halfway between ceiling and floor
+        if ceiling.z - floor.z <= HEIGHT then
+            center.z = (ceiling.z + floor.z) / 2
+            -- move the emitters z down to be lined up with center
+            self.Emitter1Ent:SetPos(Vector(self.Emitter1Ent:GetPos().x, self.Emitter1Ent:GetPos().y, center.z))
+            self.Emitter2Ent:SetPos(Vector(self.Emitter2Ent:GetPos().x, self.Emitter2Ent:GetPos().y, center.z))
+        end
+        self:SetPos(center)
+        local max = Vector(dist / 2, 10, HEIGHT/2)
+        local min = Vector(-dist / 2, -10, -HEIGHT/2)
+        max.z = math.Clamp(max.z, floor.z - center.z, ceiling.z - center.z)
+        min.z = math.Clamp(min.z, floor.z - center.z, ceiling.z - center.z)
+        self.MaxBound = max
+        self.MinBound = min
+        self.TestMaxBound = Vector(max.x, dist / 2, max.z)
+        self.TestMinBound = Vector(min.x, -dist / 2, min.z)
+        self.WorldTestMaxBound = self:LocalToWorld(self.TestMaxBound)
+        self.WorldTestMinBound = self:LocalToWorld(self.TestMinBound)
+        -- get orientation angle between the two emitters
+        local ang = (self.Emitter2Ent:GetPos() - self.Emitter1Ent:GetPos()):Angle()
+        self.BoundAngle = ang
+        -- debug draw a box with the angle
+        --debugoverlay.BoxAngles(self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle, 300, Color(0, 255, 0, 40), false)
+        --debugoverlay.Box(self:GetPos(), self.MinBound, self.MaxBound, 300, Color(255, 0, 0, 40), false)
+
+        -- spawn cleanser particle effect spanning between the two emitters
+        timer.Simple(0.1, function() self:StartParticleOnClient() end)
+
+        -- create spark ent 
+        self.SparkEnt = ents.Create("env_spark")
+        self.SparkEnt:SetPos(self:GetPos())
+        self.SparkEnt:SetParent(self)
+        self.SparkEnt:SetKeyValue("MaxDelay", "0.1")
+        self.SparkEnt:SetKeyValue("Magnitude", "2")
+        self.SparkEnt:SetKeyValue("TrailLength", "2")
+        self.SparkEnt:Spawn()
+        self.SparkEnt:Activate()
+        -- add hook to EntityFireBullets to check if bullet will intersect with grill
+        hook.Add("EntityFireBullets", "grill_bullet_check", function(shooterEnt, data)
+            if IsValid(shooterEnt) then
+                --print("EntityFireBullets: " .. shooterEnt:GetClass())
+                -- check if bullet will pass through grill's OBB using TraceOBB
+                local start = data.Src
+                local endpos = data.Src + data.Dir * data.Distance
+                local hitPoint = TraceOBB(start, endpos, self:GetPos(), self.MinBound, self.MaxBound, self.BoundAngle)
+                
+                -- if hit, change bullet's endpos to the hitpos
+                if hitPoint ~= false then
+                    --print("hit grill!")
+                    endpos = hitPoint
+                    --debugoverlay.Cross(endpos, 10, 10, Color(255, 0, 0), false)
+                    --print("old distance: " .. data.Distance)
+                    data.Distance = endpos:Distance(start)
+                    --print("new distance: " .. data.Distance)
+                    -- spark once at bullet endpos
+                    -- TODO: This does not work because the hook is called in a buggy context, see SetPos hover docs
+                    self.SparkEnt:SetPos(endpos) 
+                    self.SparkEnt:Input("SparkOnce", NULL, NULL, NULL)
+                    return true
+                end
+            end
+        end)
+    end
+end
+
+function ENT:StartParticleOnClient()
+    print("StartParticleOnClient")
+    if SERVER then
+        net.Start("s_grill_particle")
+            net.WriteEntity(self)
+            net.WriteAngle(self.BoundAngle)
+            net.WriteVector(self:WorldToLocal(self.Emitter1Ent:GetPos()))
+            net.WriteVector(self:WorldToLocal(self.Emitter2Ent:GetPos()))
+        net.Broadcast()
+    end
 end
 
 if SERVER then
+    util.AddNetworkString("s_grill_particle")
     hook.Add("TTTCanSearchCorpse", "FizzleRagdollSearchHook", function(ply, rag)
         -- check for fizzling nw var
         if rag:GetNWBool("FizzleRagdoll") == true then
@@ -129,18 +175,60 @@ if SERVER then
     end)
 end
 
+if CLIENT then
+    function ENT:RenderOverride(flags)
+        -- draw nothing
+        self:DrawModel();
+    end
+    net.Receive("s_grill_particle", function(len, ply)
+        --print("s_grill_particle recieved")
+        local grillEnt = net.ReadEntity()
+        local angle = net.ReadAngle()
+        local emitter1localpos = net.ReadVector()
+        local emitter2localpos = net.ReadVector()
+        SpawnCleanserParticles(grillEnt, angle, emitter1localpos, emitter2localpos)
+    end)
+end
+
+function SpawnCleanserParticles(grillEnt, angle, emitter1localpos, emitter2localpos)
+    local dist = emitter1localpos:Distance(emitter2localpos)
+    --print("IsValid(grillEnt): " .. tostring(IsValid(grillEnt)))
+    if IsValid(grillEnt) then
+        --print("IsValid(grillEnt.psystem): " .. tostring(IsValid(grillEnt.psystem)))
+        if not IsValid(grillEnt.psystem) then
+            --print("SpawnCleanserParticles " .. dist)
+            grillEnt.psystem = CreateParticleSystem(grillEnt, "portal_cleanser", PATTACH_ABSORIGIN)
+            grillEnt.psystem:SetControlPoint(0, grillEnt:GetPos())
+            grillEnt.psystem:SetControlPointOrientation(0, angle:Forward(), angle:Right(), angle:Up())
+            --debugoverlay.Axis(grillEnt:GetPos(), angle, 12, 600, true)
+            -- For some unfathomable reason, forward needs to point towards positive x.
+            -- Swap emitter1localpos and emitter2localpos if it doesn't.
+            if emitter1localpos.x > emitter2localpos.x then
+                print ("swapping!")
+                grillEnt.psystem:SetControlPoint(1, grillEnt:LocalToWorld(emitter2localpos))
+                grillEnt.psystem:SetControlPoint(2, grillEnt:LocalToWorld(emitter1localpos))
+            else
+                grillEnt.psystem:SetControlPoint(1, grillEnt:LocalToWorld(emitter1localpos))
+                grillEnt.psystem:SetControlPoint(2, grillEnt:LocalToWorld(emitter2localpos))
+            end
+            grillEnt.psystem:StartEmission()
+            grillEnt.psystem:SetShouldDraw(true)
+        end
+    end
+end
+
 function ENT:OnRemove()
-    --print("some asshole removed me!")
+    print("some asshole removed me!")
 end
 
 function ENT:HandleTouch(ent)
     if SERVER then
         if IsValid(ent) then
-            print("HandleTouch Class: " .. ent:GetClass())
+            --print("HandleTouch Class: " .. ent:GetClass())
             if ent.Base ~= nil then
-                print("HandleTouch Base: " .. ent.Base)
+                --print("HandleTouch Base: " .. ent.Base)
             else 
-                print("HandleTouch Base: nil")
+                --print("HandleTouch Base: nil")
             end
             if ent:IsPlayer() then
                 if ent:GetTeam() == self.OwnerTeam
@@ -268,24 +356,28 @@ function ENT:HandleTouch(ent)
 end
 
 if SERVER then
+    local skippedEntityList = {
+        ["ttt_emancipation_grill_emitter"] = true,
+        ["env_spark"] = true,
+        ["predicted_viewmodel"] = true,
+        ["keyframe_rope"] = true
+    }
+
     function ENT:Think()
-        local worldMins = self:LocalToWorld(self.MinBound)
-        local worldMaxs = self:LocalToWorld(self.MaxBound)
+        local worldMins = self.WorldTestMinBound
+        local worldMaxs = self.WorldTestMaxBound
         local worldCenter = self:GetPos()
 
         local entities = ents.FindInBox(worldMins, worldMaxs)
 
         -- iterate through entities and check if they are touching the trigger
         for _, ent in ipairs(entities) do
-            if ent ~= self 
-                    and ent ~= self.Emitter1Ent 
-                    and ent ~= self.Emitter2Ent
-                    and ent:GetClass() ~= "env_spark" then
+            if ent ~= self and not skippedEntityList[ent:GetClass()] then
                 -- if ent is in fizzling table, skip it
                 if self.FizzlingEntities[ent] then
                     -- skip this entity
                 elseif (ent:IsWeapon() or ent:IsPlayer()) then
-                    print("weapon/player found: " .. ent:GetClass())
+                    --print("weapon/player found: " .. ent:GetClass())
                     -- check if ent phys obj is inside obb
                     -- get center of ent collision bounds
                     local worldPos = ent:LocalToWorld(ent:OBBCenter())
@@ -330,7 +422,7 @@ if SERVER then
         end
 
         -- set up next think timer for 1/33rd of a second
-        self:NextThink(CurTime() + (1 / 33))
+        self:NextThink(CurTime() + tickTime)
         return true
     end
 end
@@ -373,14 +465,14 @@ function ENT:FizzleEnt(ent, ownerPlayer)
         -- first make any players carrying this ent drop it
         -- find all weapon_zm_carry entities on players
         local carryEnts = ents.FindByClass("weapon_zm_carry")
-        print ("carryEnts count: " .. table.Count(carryEnts))
+        --print ("carryEnts count: " .. table.Count(carryEnts))
         for k, v in pairs(carryEnts) do
             -- this ent may be the weapon_zm_carry carryhack. try to find out using assumptions.
             if v:GetOwner() == ownerPlayer
                     and v.EntHolding ~= nil 
                     and v.EntHolding:GetOwner() == ownerPlayer
                     and v.CarryHack:GetClass() == propEnt:GetClass() then
-                print ("found a weapon_zm_carry entity that is carrying something")
+                --print ("found a weapon_zm_carry entity that is carrying something")
                 -- remove CarryHack, this will reset the weapon_zm_carry entity as well
                 v.CarryHack:Remove()
                 -- if propEnt model is a bugbait, this is probably the CarryHack entity
@@ -499,111 +591,116 @@ function IsPointInOBB(point, center, angles, mins, maxs, isPlayer)
 end
 
 function AreOBBsIntersecting(obb1Center, obb1Min, obb1Max, obb1Angles, obb2Center, obb2Min, obb2Max, obb2Angles)
-    -- convert angles to rotation matrices
-    local rot1 = AngleToMatrix(obb1Angles)
-    local rot2 = AngleToMatrix(obb2Angles)
+    -- debugoverlay.BoxAngles(obb1Center, obb1Min, obb1Max, obb1Angles, 30, Color(0, 255, 0, 40), false)
+    -- debugoverlay.Box(obb2Center, obb2Min, obb2Max, 30, Color(255, 0, 0, 40), false)
+    
+    -- -- convert angles to rotation matrices
+    -- local rot1 = AngleToMatrix(obb1Angles)
+    -- local rot2 = AngleToMatrix(obb2Angles)
 
-    -- calculate the axes of the first OBB
-    local axes1 = {
-        rot1[1],
-        rot1[2],
-        rot1[3]
-    }
+    -- -- calculate the axes of the first OBB
+    -- local axes1 = {
+    --     rot1[1],
+    --     rot1[2],
+    --     rot1[3]
+    -- }
 
-    -- calculate the axes of the second OBB
-    local axes2 = {
-        rot2[1],
-        rot2[2],
-        rot2[3]
-    }
+    -- -- calculate the axes of the second OBB
+    -- local axes2 = {
+    --     rot2[1],
+    --     rot2[2],
+    --     rot2[3]
+    -- }
 
-    -- calculate the vectors between the centers of the two OBBs
-    local centerVec = obb2Center - obb1Center
+    -- -- calculate the vectors between the centers of the two OBBs
+    -- local centerVec = obb2Center - obb1Center
 
-    -- iterate over the axes of the first OBB
-    for _, axis1 in ipairs(axes1) do
-        -- project the center vector onto the axis
-        local projection = centerVec:Dot(axis1)
+    -- -- iterate over the axes of the first OBB
+    -- for _, axis1 in ipairs(axes1) do
+    --     -- project the center vector onto the axis
+    --     local projection = centerVec:Dot(axis1)
 
-        -- project the first OBB onto the axis
-        local obb1Projection = {
-            axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
-            axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
-            axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
-            axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
-            axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
-            axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
-            axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z),
-            axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z)
-        }
+    --     -- project the first OBB onto the axis
+    --     local obb1Projection = {
+    --         axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
+    --         axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
+    --         axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
+    --         axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
+    --         axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
+    --         axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
+    --         axis1:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z),
+    --         axis1:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z)
+    --     }
 
-        -- project the second OBB onto the axis
-        local obb2Projection = {
-            axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
-            axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
-            axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
-            axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
-            axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
-            axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
-            axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z),
-            axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z)
-        }
+    --     -- project the second OBB onto the axis
+    --     local obb2Projection = {
+    --         axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
+    --         axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
+    --         axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
+    --         axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
+    --         axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
+    --         axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
+    --         axis1:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z),
+    --         axis1:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z)
+    --     }
 
-        -- calculate the minimum and maximum projections of the two OBBs onto the axis
-        local obb1MinProjection = math.min(unpack(obb1Projection))
-        local obb1MaxProjection = math.max(unpack(obb1Projection))
-        local obb2MinProjection = math.min(unpack(obb2Projection))
-        local obb2MaxProjection = math.max(unpack(obb2Projection))
+    --     -- calculate the minimum and maximum projections of the two OBBs onto the axis
+    --     local obb1MinProjection = math.min(unpack(obb1Projection))
+    --     local obb1MaxProjection = math.max(unpack(obb1Projection))
+    --     local obb2MinProjection = math.min(unpack(obb2Projection))
+    --     local obb2MaxProjection = math.max(unpack(obb2Projection))
 
-        -- check if the projections overlap
-        if obb1MaxProjection < obb2MinProjection or obb2MaxProjection < obb1MinProjection then
-            return false
-        end
-    end
+    --     -- check if the projections overlap
+    --     if obb1MaxProjection < obb2MinProjection or obb2MaxProjection < obb1MinProjection then
+    --         return false
+    --     end
+    -- end
 
-    -- iterate over the axes of the second OBB
-    for _, axis2 in ipairs(axes2) do
-        -- project the center vector onto the axis
-        local projection = centerVec:Dot(axis2)
+    -- -- iterate over the axes of the second OBB
+    -- for _, axis2 in ipairs(axes2) do
+    --     -- project the center vector onto the axis
+    --     local projection = centerVec:Dot(axis2)
 
-        -- project the first OBB onto the axis
-        local obb1Projection = {
-            axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
-            axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
-            axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
-            axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
-            axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
-            axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
-            axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z),
-            axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z)
-        }
+    --     -- project the first OBB onto the axis
+    --     local obb1Projection = {
+    --         axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
+    --         axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Min.z),
+    --         axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
+    --         axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
+    --         axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Min.z),
+    --         axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Min.y + rot1[3] * obb1Max.z),
+    --         axis2:Dot(rot1[1] * obb1Min.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z),
+    --         axis2:Dot(rot1[1] * obb1Max.x + rot1[2] * obb1Max.y + rot1[3] * obb1Max.z)
+    --     }
 
-        -- project the second OBB onto the axis
-        local obb2Projection = {
-            axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
-            axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
-            axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
-            axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
-            axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
-            axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
-            axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z),
-            axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z)
-        }
+    --     -- project the second OBB onto the axis
+    --     local obb2Projection = {
+    --         axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
+    --         axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Min.z),
+    --         axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
+    --         axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
+    --         axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Min.z),
+    --         axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Min.y + rot2[3] * obb2Max.z),
+    --         axis2:Dot(rot2[1] * obb2Min.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z),
+    --         axis2:Dot(rot2[1] * obb2Max.x + rot2[2] * obb2Max.y + rot2[3] * obb2Max.z)
+    --     }
 
-        -- calculate the minimum and maximum projections of the two OBBs onto the axis
-        local obb1MinProjection = math.min(unpack(obb1Projection))
-        local obb1MaxProjection = math.max(unpack(obb1Projection))
-        local obb2MinProjection = math.min(unpack(obb2Projection))
-        local obb2MaxProjection = math.max(unpack(obb2Projection))
+    --     -- calculate the minimum and maximum projections of the two OBBs onto the axis
+    --     local obb1MinProjection = math.min(unpack(obb1Projection))
+    --     local obb1MaxProjection = math.max(unpack(obb1Projection))
+    --     local obb2MinProjection = math.min(unpack(obb2Projection))
+    --     local obb2MaxProjection = math.max(unpack(obb2Projection))
 
-        -- check if the projections overlap
-        if obb1MaxProjection < obb2MinProjection or obb2MaxProjection < obb1MinProjection then
-            return false
-        end
-    end
+    --     -- check if the projections overlap
+    --     if obb1MaxProjection < obb2MinProjection or obb2MaxProjection < obb1MinProjection then
+    --         return false
+    --     end
+    -- end
 
-    -- if all axes overlap, the OBBs are intersecting
-    return true
+    -- -- if all axes overlap, the OBBs are intersecting
+    -- return true
+
+    return util.IsOBBIntersectingOBB(obb1Center, obb1Angles, obb1Min, obb1Max, obb2Center, obb2Angles, obb2Min, obb2Max, 0)
 end
 
 function TraceOBB(traceStart, traceEnd, obbCenter, obbMin, obbMax, obbAngles)
@@ -617,12 +714,12 @@ function TraceOBB(traceStart, traceEnd, obbCenter, obbMin, obbMax, obbAngles)
     localStartRotated.x = localStart.x * obbRot:GetForward().x + localStart.y * obbRot:GetForward().y + localStart.z * obbRot:GetForward().z
     localStartRotated.y = localStart.x * obbRot:GetRight().x + localStart.y * obbRot:GetRight().y + localStart.z * obbRot:GetRight().z
     localStartRotated.z = localStart.x * obbRot:GetUp().x + localStart.y * obbRot:GetUp().y + localStart.z * obbRot:GetUp().z
-    debugoverlay.Cross(localStartRotated - obbCenter, 10, 60, Color(0, 255, 0), true)
+    --debugoverlay.Cross(localStartRotated - obbCenter, 10, 60, Color(0, 255, 0), true)
     local localEndRotated = Vector()
     localEndRotated.x = localEnd.x * obbRot:GetForward().x + localEnd.y * obbRot:GetForward().y + localEnd.z * obbRot:GetForward().z
     localEndRotated.y = localEnd.x * obbRot:GetRight().x + localEnd.y * obbRot:GetRight().y + localEnd.z * obbRot:GetRight().z
     localEndRotated.z = localEnd.x * obbRot:GetUp().x + localEnd.y * obbRot:GetUp().y + localEnd.z * obbRot:GetUp().z
-    debugoverlay.Cross(localEndRotated - obbCenter, 10, 60, Color(0, 255, 0), true)
+    --debugoverlay.Cross(localEndRotated - obbCenter, 10, 60, Color(0, 255, 0), true)
     local worldHitPos = TraceAABB(localStartRotated, localEndRotated, obbMin, obbMax)
     if worldHitPos then
         local worldHitPosRotated = Vector()
